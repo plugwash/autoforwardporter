@@ -1,0 +1,41 @@
+#!/bin/bash -ev
+set -o pipefail
+PACKAGE=$1 
+OLDVERSION=$2
+DEBVERSION=$3
+NEWVERSION=$4
+TARGETSUITE=$5
+
+NEWVERSIONNOEPOCH=`echo ${NEWVERSION} | sed -e s/^[^:]://`
+OLDVERSIONNOEPOCH=`echo ${OLDVERSION} | sed -e s/^[^:]://`
+DEBVERSIONNOEPOCH=`echo ${DEBVERSION} | sed -e s/^[^:]://`
+
+
+if [[ $PACKAGE == lib* ]]; then
+    PACKAGEDIR=${PACKAGE:0:4}/$PACKAGE
+else
+    PACKAGEDIR=${PACKAGE:0:1}/$PACKAGE
+fi
+
+DEBDIFF=/build/debdiffs/*/$PACKAGEDIR/${PACKAGE}_${OLDVERSIONNOEPOCH}.debdiff
+
+cd /build/tmp/
+filterdiff -p1 -i debian/changelog $DEBDIFF | grep -v ^+++ | grep ^+ | cut -c 2- > debdiffchangelogentries
+filterdiff -p1 -x debian/changelog $DEBDIFF > debdiffwithoutchangelog
+
+preparechangelogentry debdiffchangelogentries $NEWVERSION $TARGETSUITE "`date -uR`" $PACKAGE > processedchangelogentry
+OUTPUTDEBDIFF=/build/autoforwardporter/output/${PACKAGE}_${NEWVERSIONNOEPOCH}_generated.debdiff
+echo '--- a/debian/changelog' > $OUTPUTDEBDIFF
+echo '+++ b/debian/changelog' >> $OUTPUTDEBDIFF
+echo '@@ -0,0 +0,'`wc -l processedchangelogentry | cut -d ' ' -f 1 `' @@' >> $OUTPUTDEBDIFF
+sed -e s/^/+/ processedchangelogentry >> $OUTPUTDEBDIFF
+cat debdiffwithoutchangelog >> $OUTPUTDEBDIFF
+
+rm -rf extract
+dpkg-source -x  --skip-patches /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc extract
+cd extract
+patch -p1 --no-backup-if-mismatch  < $OUTPUTDEBDIFF
+cd /build/autoforwardporter/output/
+dcmd --orig cp /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc .
+dpkg-source -b /build/tmp/extract
+sbuild -snA -d ${TARGETSUITE} ${PACKAGE}_${NEWVERSIONNOEPOCH}.dsc
