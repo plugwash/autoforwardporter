@@ -38,4 +38,5 @@ patch -p1 --no-backup-if-mismatch  < $OUTPUTDEBDIFF
 cd /build/autoforwardporter/output/
 dcmd --orig cp /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc .
 dpkg-source -b /build/tmp/extract
-sbuild -snA -d ${TARGETSUITE} ${PACKAGE}_${NEWVERSIONNOEPOCH}.dsc
+#going forward it would be good to have more inteligent application of --force-orig-source, not a massive priority for now though
+sbuild -snA --force-orig-source -d ${TARGETSUITE} ${PACKAGE}_${NEWVERSIONNOEPOCH}.dsc
