@@ -90,13 +90,15 @@ for PACKAGE in $(cat /build/autoforwardporter/whitelist.${MAINSUITE}) ; do
 	NEWVERSION=${DEBVERSION}+rpi1
 	OLDVERSION=${MAINVERSION}
     elif [[ $STAGINGVERSION == *rvt* ]] ; then
+	if dpkg --compare-versions $STAGINGVERSION lt $DEBVERSION ; then
+	    echo no need to forward port rvt version as debian version is higher
+	    continue
+	fi
 	NEWVERSION=${DEBVERSION}+rvt
 	OLDVERSION=${STAGINGVERSION}
-    elif [[ $MAINVERSION == *rpi* ]] ; then
-	NEWVERSION=${DEBVERSION}+rvt
-	OLDVERSION=${MAINVERSION}
     else
-	echo ERROR: no raspbian version marker found in main version or staging version
+	echo no rpi version marker found in main version or staging version
+	echo and no rvt marker found in staging version.
 	continue
     fi
     MAINBASEVERSION=`echo $MAINVERSION | sed 's/+rpi[0-9]*//' | sed 's/+rvt//'`
