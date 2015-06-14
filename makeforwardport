@@ -1,5 +1,6 @@
 #!/bin/bash -ev
 set -o pipefail
+echo makeforwardport starting command: makeforwardport $1 $2 $3 $4 $5
 PACKAGE=$1 
 OLDVERSION=$2
 DEBVERSION=$3
@@ -20,7 +21,7 @@ fi
 DEBDIFF=/build/debdiffs/*/$PACKAGEDIR/${PACKAGE}_${OLDVERSIONNOEPOCH}.debdiff
 
 cd /build/tmp/
-filterdiff -p1 -i debian/changelog $DEBDIFF | grep -v ^+++ | grep ^+ | cut -c 2- > debdiffchangelogentries
+(filterdiff -p1 -i debian/changelog $DEBDIFF | grep -v ^+++ | grep ^+ | cut -c 2- > debdiffchangelogentries) || echo changelog extraction failed, is the debdiff sane?
 filterdiff -p1 -x debian/changelog $DEBDIFF > debdiffwithoutchangelog
 
 preparechangelogentry debdiffchangelogentries $NEWVERSION $TARGETSUITE "`date -uR`" $PACKAGE > processedchangelogentry

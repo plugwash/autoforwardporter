@@ -83,30 +83,46 @@ for PACKAGE in $(cat /build/autoforwardporter/whitelist.${MAINSUITE}) ; do
     echo main version $MAINVERSION
     echo staging version $STAGINGVERSION
     echo deb version $DEBVERSION
-
-    if dpkg --compare-versions $MAINVERSION lt $DEBVERSION && dpkg --compare-versions $STAGINGVERSION le $DEBVERSION; then
+    if [[ $STAGINGVERSION == *rpi* ]] ; then
+	NEWVERSION=${DEBVERSION}+rpi1
+	OLDVERSION=${STAGINGVERSION}
+    elif [[ $MAINVERSION == *rpi* ]] ; then
+	NEWVERSION=${DEBVERSION}+rpi1
+	OLDVERSION=${MAINVERSION}
+    elif [[ $STAGINGVERSION == *rvt* ]] ; then
+	NEWVERSION=${DEBVERSION}+rvt
+	OLDVERSION=${STAGINGVERSION}
+    elif [[ $MAINVERSION == *rpi* ]] ; then
+	NEWVERSION=${DEBVERSION}+rvt
+	OLDVERSION=${MAINVERSION}
+    else
+	echo ERROR: no raspbian version marker found in main version or staging version
+	continue
+    fi
+    MAINBASEVERSION=`echo $MAINVERSION | sed 's/+rpi[0-9]*//' | sed 's/+rvt//'`
+    STAGINGBASEVERSION=`echo $STAGINGVERSION | sed 's/+rpi[0-9]*//' | sed 's/+rvt//'`
+    if dpkg --compare-versions $MAINBASEVERSION lt $DEBVERSION && dpkg --compare-versions $STAGINGBASEVERSION le $DEBVERSION; then
 	echo version ordering looks ok for forward porting
-	if [[ $STAGINGVERSION == *rpi* ]] ; then
-	    NEWVERSION=${DEBVERSION}+rpi1
-	    OLDVERSION=${STAGINGVERSION}
-	elif [[ $MAINVERSION == *rpi* ]] ; then
-	    NEWVERSION=${DEBVERSION}+rpi1
-	    OLDVERSION=${MAINVERSION}
-	elif [[ $STAGINGVERSION == *rpi* ]] ; then
-	    NEWVERSION=${DEBVERSION}+rpi1
-	    OLDVERSION=${STAGINGVERSION}
-	elif [[ $MAINVERSION == *rpi* ]] ; then
-	    NEWVERSION=${DEBVERSION}+rpi1
-	    OLDVERSION=${MAINVERSION}
-	else
-	    echo ERROR: no raspbian version marker found in main version or staging version
-	fi
 	
 
 	if dpkg --compare-versions $NEWVERSION lt $STAGINGVERSION;then
-	    echo ERROR: UNIMPLEMENTED: version handling special case needed
+	    #sometimes Debian uses a version suffix that makes their new version
+	    #with our suffix on the end lower than our old version, we need
+	    #to take care of that.
+	    
+	    STAGINGPREMARKERVERSION=`echo $STAGINGVERSION | sed 's/+rpi[0-9]*.*//' | sed 's/+rvt.*//'`
+	    STAGINGVERSIONMARKER=`echo $STAGINGVERSION | grep -Eo '\+(rvt|rpi[0-9]*)'`
+	    STAGINGVERSIONUPTOANDINCLUDINGMARKER=${STAGINGPREMARKERVERSION}${STAGINGVERSIONMARKER}
+	    NEWDEBSUFFIX=${DEBVERSION:${#STAGINGPREMARKERVERSION}}
+	    NEWVERSION=${STAGINGVERSIONUPTOANDINCLUDINGMARKER}${NEWDEBSUFFIX}
+	fi
+	if dpkg --compare-versions $NEWVERSION lt $STAGINGVERSION;then	
+	    echo ERROR: WTF: something really strange is going on with version numbers
+	    echo staging version: $STAGINGVERSION
+	    echo new version: $NEWVERSION
 	    exit 1
 	fi
+
 	NEWVERSIONNOEPOCH=`echo ${NEWVERSION} | sed -e s/^[^:]://`
 	if [ ! -e /build/autoforwardporter/output/${PACKAGE}_${NEWVERSIONNOEPOCH}.log ] ; then
 	    (makeforwardport $PACKAGE $OLDVERSION $DEBVERSION $NEWVERSION $MAINSUITE-staging || true) 2>&1 | tee /build/autoforwardporter/output/${PACKAGE}_${NEWVERSIONNOEPOCH}.log
