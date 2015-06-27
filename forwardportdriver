@@ -66,7 +66,7 @@ rsync -rv --link-dest=/build/workingrepo/pool --exclude='*.*deb' --ignore-existi
 
 echo check source archive and generate debdiffs
 cd /build/sourcearchive
-/home/plugwash/oodfinder/sourcearchivechecker +rpi$+rvt /build/debdiffs/
+TMPDIR=/build/tmp/debdiff/ /home/plugwash/oodfinder/sourcearchivechecker +rpi$+rvt /build/debdiffs/
 
 
 for SUITE in ${MAINSUITE} ${MAINSUITE}-staging ${MAINSUITE}-deb ; do
