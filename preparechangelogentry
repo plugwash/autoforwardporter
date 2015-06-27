@@ -37,7 +37,7 @@ for entry in c:
     entries.append(entry)
 
 print(package+' ('+newversion+') '+distribution+'; urgency=medium')
-
+print()
 for entry in reversed(entries):
 	lines = entry.changes()[:] #copy this so we don't modify the libraries
 	                           #version of it.
