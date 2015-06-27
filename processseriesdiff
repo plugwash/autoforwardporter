@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+import sys
+inputdiff = sys.argv[1]
+debseries = sys.argv[2]
+
+f = open(inputdiff)
+diff = [x.rstrip('\n') for x in f]
+
+n = len(diff) -1;
+while (n >= 0) and (diff[n][0] == '+'):
+	n -= 1
+
+if (n >= 0) and (diff[n][0] == ' '):
+	f = open(debseries)
+	ds = [x.rstrip('\n') for x in f]
+	diff[n] = ' '+ds[len(ds)-1]
+
+for line in diff:
+	print(line)
+
