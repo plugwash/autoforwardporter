@@ -1,7 +1,7 @@
 #!/bin/bash -ev
 set -o pipefail
 echo makeforwardport starting command: makeforwardport $1 $2 $3 $4 $5
-PACKAGE=$1 
+PACKAGE=$1
 OLDVERSION=$2
 DEBVERSION=$3
 NEWVERSION=$4
@@ -41,15 +41,24 @@ cd extract
 patch -p1 --no-backup-if-mismatch  < $OUTPUTDEBDIFF
 
 #defuzz patches
+cd ..
+rm -rf extract.defuzz
+cp -a extract extract.defuzz
+cd extract.defuzz
 export QUILT_PATCHES=debian/patches
 quilt push -a --fuzz 0 || true
 while quilt push; do
 	quilt refresh
 	quilt push -a --fuzz 0 || true
 done
+cd ../extract
+rm -rf debian/patches
+mv ../extract.defuzz/debian/patches debian/ || true
+rm -rf ../extract.defuzz
 
 cd /build/autoforwardporter/output/
 dcmd --orig cp /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc .
-dpkg-source -b /build/tmp/extract
+dpkg-source -b /build/tmp/extract || dpkg-source -b /build/tmp/extract
+
 #going forward it would be good to have more inteligent application of --force-orig-source, not a massive priority for now though
 sbuild -snA --force-orig-source -d ${TARGETSUITE} ${PACKAGE}_${NEWVERSIONNOEPOCH}.dsc
