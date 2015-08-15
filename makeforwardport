@@ -63,7 +63,7 @@ rm -rf ../extract.defuzz
 
 #package specific hacks for linux
 if [[ ${PACKAGE} = linux ]]; then
-    debclean || true
+    debuild clean || debuild clean
 fi
 
 cd /build/autoforwardporter/output/
