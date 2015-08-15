@@ -25,6 +25,11 @@ cd /build/tmp/
 filterdiff -p1 -i debian/patches/series $DEBDIFF > debdiffseries
 filterdiff -p1 -x debian/changelog -x debian/patches/series $DEBDIFF > debdiffwithoutchangelogorseries
 
+#package specific hacks for linux
+if [[ ${PACKAGE} = linux ]]; then
+    filterdiff -p1 -x debian/config.defines.dump -x debian/control.md5sum -x debian/rules.gen debdiffwithoutchangelogorseries | sponge debdiffwithoutchangelogorseries
+fi
+
 rm -rf extract
 dpkg-source -x  --skip-patches /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc extract
 
@@ -56,9 +61,14 @@ rm -rf debian/patches
 mv ../extract.defuzz/debian/patches debian/ || true
 rm -rf ../extract.defuzz
 
+#package specific hacks for linux
+if [[ ${PACKAGE} = linux ]]; then
+    debclean || true
+fi
+
 cd /build/autoforwardporter/output/
 dcmd --orig cp /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc .
-dpkg-source -b /build/tmp/extract || dpkg-source -b /build/tmp/extract
+dpkg-source -b /build/tmp/extract
 
 #going forward it would be good to have more inteligent application of --force-orig-source, not a massive priority for now though
 sbuild -snA --force-orig-source -d ${TARGETSUITE} ${PACKAGE}_${NEWVERSIONNOEPOCH}.dsc
