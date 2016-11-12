@@ -30,6 +30,11 @@ if [[ ${PACKAGE} = linux ]]; then
     filterdiff -p1 -x debian/config.defines.dump -x debian/control.md5sum -x debian/rules.gen debdiffwithoutchangelogorseries | sponge debdiffwithoutchangelogorseries
 fi
 
+#package specific hacks for xen
+if [[ ${PACKAGE} = xen ]]; then
+    filterdiff -p1 -x debian/control.md5sum debdiffwithoutchangelogorseries | sponge debdiffwithoutchangelogorseries
+fi
+
 rm -rf extract
 dpkg-source -x  --skip-patches /build/workingrepo/pool/*/$PACKAGEDIR/${PACKAGE}_${DEBVERSIONNOEPOCH}.dsc extract
 
@@ -61,8 +66,8 @@ rm -rf debian/patches
 mv ../extract.defuzz/debian/patches debian/ || true
 rm -rf ../extract.defuzz
 
-#package specific hacks for linux
-if [[ ${PACKAGE} = linux ]]; then
+#package specific hacks for linux and xen
+if [[ ${PACKAGE} = linux ]] ||  [[ ${PACKAGE} = xen ]]; then
     debuild clean || debuild clean
 fi
 

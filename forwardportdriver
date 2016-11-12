@@ -59,7 +59,9 @@ MAINSUITE=$1
 #update working repo
 cd /build/workingrepo
 
-reprepro -V update ${MAINSUITE} ${MAINSUITE}-staging ${MAINSUITE}-deb
+if [[ $2 != noupdate ]] ; then
+    reprepro -V update ${MAINSUITE} ${MAINSUITE}-staging ${MAINSUITE}-deb
+fi
 #update local source archive, unlike the main public source archive this
 #one is intended to only contain verified source packages.
 rsync -rv --link-dest=/build/workingrepo/pool --exclude='*.*deb' --ignore-existing /build/workingrepo/pool/ /build/sourcearchive
